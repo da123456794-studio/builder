@@ -1,0 +1,95 @@
+name: 编译 cmcclient
+
+# 监听 build 事件触发
+on:
+  repository_dispatch:
+    types: [build-cmcclient]
+
+
+jobs:
+  # 并行编译
+  build:
+    name: 编译 ${{ matrix.goos }}/${{ matrix.goarch }}
+    runs-on: ubuntu-latest
+    # 矩阵策略
+    strategy:
+      # 配置
+      matrix:
+        # 目标列表
+        goos: [linux, windows, darwin, android]
+        # 目标架构列表
+        goarch: [amd64, arm64]
+        # 排除不支持的组合
+        exclude:
+          - goos: android
+            goarch: amd64
+      # 即使某个平台失败,也不影响其他
+      fail-fast: false
+
+    steps:
+      - name: 检出私有仓库
+        uses: actions/checkout@v4
+        with:
+          # 源代码仓库
+          repository: da123456794/cmcclient
+          # 可访问源代码Token
+          token: ${{ secrets.CMCCLIENT_REPO_TOKEN }}
+          ref: ${{ github.event.client_payload.sha }}
+
+      
+      - name: 查看 Go 版本
+        id: watch-go-version
+        # 应该怎么跑?
+        run: |
+          go env version
+          go version
+          go list -m
+      
+      - name: 编译 ${{ matrix.goos }}/${{ matrix.goarch }}
+        run: |
+          go install mvdan.cc/garble@latest
+          # 编译
+          if [ "${{ matrix.goos }}" = "windows" ]; then
+            EXT=".exe"
+          else
+            EXT=""
+          fi
+          OUTPUT_NAME="${{ matrix.goos }}_${{ matrix.goarch }}$EXT"
+          GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} \
+            garble build -ldflags="-s -w" -o ./build/$OUTPUT_NAME ./grpc
+
+
+      - name: 上传 ${{ matrix.goos }}/${{ matrix.goarch }} 产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.goos }}-${{ matrix.goarch }}
+          path: ./build/*
+          retention-days: 1
+  
+
+
+  release:
+    name: 创建 Release 并上传
+    # 运行环境
+    runs-on: ubuntu-latest
+    # build 任务
+    needs: build
+    # 权限
+    # permissions:
+    #   contents: write
+    # 步骤
+    steps:
+
+      - name: 触发最终仓库
+        uses: peter-evans/repository-dispatch@v4
+        with:
+          # 发布仓库
+          repository: da123456794/cmcclient-release
+          # 可访问发布Token
+          token: ${{ secrets.CMCCLIENT_RELEASE_REPO_TOKEN }}
+          event-type: build-complete
+          client-payload: |
+            {
+              "run_id": "${{ github.run_id }}",
+              "tag": "${{ github.event.client_payload.tag }}"
+            }
