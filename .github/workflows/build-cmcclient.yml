@@ -84,7 +84,7 @@ jobs:
         uses: peter-evans/repository-dispatch@v4
         with:
           # 发布仓库
-          repository: da123456794/cmcclient-release
+          repository: da123456794-studio/cmcclient-release
           # 可访问发布Token
           token: ${{ secrets.CMCCLIENT_RELEASE_REPO_TOKEN }}
           event-type: build-complete
