@@ -27,6 +27,14 @@ jobs:
       fail-fast: false
 
     steps:
+
+      - name: 系统信息
+        run: |
+          echo "CPU 核心数: $(nproc)"
+          echo "内存: $(free -h | grep Mem | awk '{print $2}')"
+          echo "操作系统: $(uname -a)"
+
+
       - name: 检出私有仓库
         uses: actions/checkout@v4
         with:
@@ -45,8 +53,6 @@ jobs:
           # 缓存
           cache: true
           cache-dependency-path: go.sum
-
-
       
       - name: 查看 Go 版本
         id: watch-go-version
@@ -55,6 +61,18 @@ jobs:
           go env version
           go version
           go list -m
+
+          
+      - name: 缓存 Go 模块和构建缓存
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}-v1
+          restore-keys: |
+            ${{ runner.os }}-go-
+
       
       - name: 编译 ${{ matrix.goos }}/${{ matrix.goarch }}
         run: |
