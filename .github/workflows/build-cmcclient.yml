@@ -36,6 +36,17 @@ jobs:
           token: ${{ secrets.CMCCLIENT_REPO_TOKEN }}
           ref: ${{ github.event.client_payload.sha }}
 
+
+      - name: 设置 Go 环境
+        uses: actions/setup-go@v7
+        with:
+          # Go 版本
+          go-version: '1.26.5'
+          # 缓存
+          cache: true
+          cache-dependency-path: go.sum
+
+
       
       - name: 查看 Go 版本
         id: watch-go-version
@@ -84,9 +95,9 @@ jobs:
         uses: peter-evans/repository-dispatch@v4
         with:
           # 发布仓库
-          repository: da123456794-studio/cmcclient-release
+          repository: da123456794/cmcclient-release
           # 可访问发布Token
-          token: ${{ secrets.CMCCLIENT_RELEASE_REPO_TOKEN }}
+          token: ${{ secrets.RELEASE_REPO_TOKEN }}
           event-type: build-complete
           client-payload: |
             {
