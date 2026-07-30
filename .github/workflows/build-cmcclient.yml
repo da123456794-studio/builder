@@ -97,7 +97,7 @@ jobs:
           # 发布仓库
           repository: da123456794/cmcclient-release
           # 可访问发布Token
-          token: ${{ secrets.RELEASE_REPO_TOKEN }}
+          token: ${{ secrets.CMCCLIENT_RELEASE_REPO_TOKEN }}
           event-type: build-complete
           client-payload: |
             {
